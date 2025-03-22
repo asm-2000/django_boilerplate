@@ -43,6 +43,7 @@ Make sure you have the following installed:
    ```
 4. **Set up the database**
    ```bash
+   python manage.py makemigrations
    python manage.py migrate
    ```
 5. **Create a superuser** (for accessing the admin panel)
