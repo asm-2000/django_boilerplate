@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - backend_volume:/app/data  
+    command: python manage.py makemigrations && 
+             python manage.py migrate        
+    env_file:
+      - .env
+
+  database:
+    image: postgres:15
+    ports:
+      - 5432:5432
+    volumes:
+      - database_volume:/var/lib/postgresql/data 
+    environment:
+      POSTGRES_USER: ${DB_USER}  
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  
+      POSTGRES_DB: ${DB_Name}
+
+volumes:
+  backend_volume:
+  database_volume:
