@@ -4,9 +4,10 @@ from authentication.api.serializers import UserCredentialSerializer
 from rest_framework import status
 from django.contrib.auth.hashers import check_password
 from global_utils.service_return import service_return
+from typing import Dict, Any
 
 
-def login_user(user_login_credentials):
+def login_user(user_login_credentials: UserCredentialSerializer) -> Dict[str, Any]:
     try:
         username = user_login_credentials.validated_data.get("username")
         password = user_login_credentials.validated_data.get("password")
