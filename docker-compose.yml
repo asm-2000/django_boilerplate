@@ -1,28 +1,130 @@
 services:
+  database:
+    image: postgres:15
+    container_name: postgres-db
+    ports:
+      - "5433:5432"
+    volumes:
+      - database_volume:/var/lib/postgresql/data 
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}  
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  
+      POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal_network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-broker
+    ports:
+      - "5673:5672"    
+      - "15673:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal_network
+    restart: unless-stopped
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: django-backend
     ports:
-      - 8000:8000
+      - "8000:8000"
     volumes:
-      - backend_volume:/app/data  
-    command: python manage.py makemigrations && 
-             python manage.py migrate        
+      - backend_volume:/app/data
+    command: sh -c "
+      echo 'Waiting for database...' &&
+      python manage.py migrate --check || (
+        echo 'Running migrations...' &&
+        python manage.py migrate
+      ) &&
+      echo 'Starting Django server...' &&
+      python manage.py runserver 0.0.0.0:8000
+      "
     env_file:
       - .env
+    depends_on:
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - internal_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
-  database:
-    image: postgres:15
-    ports:
-      - 5432:5432
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: celery-worker
     volumes:
-      - database_volume:/var/lib/postgresql/data 
+      - backend_volume:/app/data
+    env_file:
+      - .env
+    command: sh -c "
+      echo 'Waiting for RabbitMQ and Database...' &&
+      celery -A core worker --loglevel=info --concurrency=2
+      "
+    depends_on:
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - internal_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "celery", "-A", "core", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  
+  flower:
+    image: mher/flower
+    container_name: flower-monitor
     environment:
-      POSTGRES_USER: ${DB_USER}  
-      POSTGRES_PASSWORD: ${DB_PASSWORD}  
-      POSTGRES_DB: ${DB_Name}
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - FLOWER_PORT=5555
+    ports:
+      - "5001:5555"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      celery:
+        condition: service_started
+    networks:
+      - internal_network
+    restart: unless-stopped
 
 volumes:
   backend_volume:
   database_volume:
+
+networks:
+  internal_network:
+    driver: bridge
