@@ -60,7 +60,7 @@ Make sure you have the following installed:
    - Flower(celery monitoring): `http://127.0.0.1:5001/`
 
 ## Environment Variables
-Create a `.env` file and configure the variables included in the .env.sample. Make sure to use proper vserivice names used in docker compose for running the server through docker. 
+Create a `.env` file and configure the variables included in the .env.sample. Make sure to use proper service names used in docker compose for running the server through docker. 
 
 ## Running with Docker
 1. **Build and start the containers**
