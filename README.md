@@ -57,9 +57,10 @@ Make sure you have the following installed:
 7. **Access the application**
    - API Documentation: `http://127.0.0.1:8000/backend/api/swagger/`
    - Admin Panel: `http://127.0.0.1:8000/backend/api/admin/`
+   - Flower(celery monitoring): `http://127.0.0.1:5001/`
 
 ## Environment Variables
-Create a `.env` file and configure the variables included in the .env.sample
+Create a `.env` file and configure the variables included in the .env.sample. Make sure to use proper vserivice names used in docker compose for running the server through docker. 
 
 ## Running with Docker
 1. **Build and start the containers**
@@ -69,4 +70,4 @@ Create a `.env` file and configure the variables included in the .env.sample
 2. **Access the application**
    - API Documentation: `http://localhost:8000/backend/api/swagger/`
    - Admin Panel: `http://localhost:8000/backend/api/admin/`
-
+   - Flower(celery monitoring): `http://127.0.0.1:5001/`
