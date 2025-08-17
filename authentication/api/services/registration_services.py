@@ -10,7 +10,7 @@ from authentication.api.utils import generate_token_for_user
 from global_utils.service_return import service_return
 from typing import Dict, Any
 from uuid import UUID
-
+from authentication.tasks import example_send_welcome_email
 
 def register_user(user_credentials: UserCredentialSerializer) -> Dict[str, Any]:
     try:
@@ -35,6 +35,10 @@ def register_user(user_credentials: UserCredentialSerializer) -> Dict[str, Any]:
             )
         token_obj = generate_token_for_user(user_credentials.instance)
         user_data = UserCredentialSerializer(user).data
+
+        # Example celery task invocation
+        example_send_welcome_email.delay(user_data["email"])
+        
         return_data = {
             "user_credentials": user_data,
             "access": token_obj.get("access"),
