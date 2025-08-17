@@ -70,7 +70,7 @@ services:
       - internal_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/", "||", "exit", "1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/admin/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
