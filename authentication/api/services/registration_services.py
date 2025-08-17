@@ -8,9 +8,11 @@ from authentication.api.serializers import (
 )
 from authentication.api.utils import generate_token_for_user
 from global_utils.service_return import service_return
+from typing import Dict, Any
+from uuid import UUID
+from authentication.tasks import example_send_welcome_email
 
-
-def register_user(user_credentials):
+def register_user(user_credentials: UserCredentialSerializer) -> Dict[str, Any]:
     try:
         exist_user = User.objects.filter(
             email=user_credentials.validated_data.get("email")
@@ -33,6 +35,10 @@ def register_user(user_credentials):
             )
         token_obj = generate_token_for_user(user_credentials.instance)
         user_data = UserCredentialSerializer(user).data
+
+        # Example celery task invocation
+        example_send_welcome_email.delay(user_data["email"])
+        
         return_data = {
             "user_credentials": user_data,
             "access": token_obj.get("access"),
@@ -52,7 +58,7 @@ def register_user(user_credentials):
         )
 
 
-def get_user_credentials(user_id):
+def get_user_credentials(user_id: UUID) -> Dict[str, Any]:
     try:
         user = User.objects.filter(id=user_id).first()
         if not user:
@@ -74,7 +80,7 @@ def get_user_credentials(user_id):
         )
 
 
-def update_user_details(user_id, user_details):
+def update_user_details(user_id: UUID, user_details: Dict[str, Any]) -> Dict[str, Any]:
     try:
         user_exists = User.objects.filter(id=user_id).first()
         if not user_exists:
